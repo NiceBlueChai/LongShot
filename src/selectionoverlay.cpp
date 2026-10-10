@@ -4,6 +4,7 @@
 #include "ocr.h"
 #include <QButtonGroup>
 #include <QFileDialog>
+#include <QFrame>
 #include <QSaveFile>
 #include <QApplication>
 #include <QClipboard>
@@ -90,41 +91,56 @@ SelectionOverlay::SelectionOverlay(QScreen *screen,
     panel_->setObjectName("captureToolbar");
     panel_->setCursor(Qt::ArrowCursor);
     auto layout = new QVBoxLayout(panel_);
-    layout->setContentsMargins(8, 6, 8, 6);
-    layout->setSpacing(5);
-    panel_->setStyleSheet("QWidget { background: #202530; color: white; border-radius: 4px; }"
-                         "QPushButton { background: transparent; padding: 5px 7px; border-radius: 3px; }"
-                         "QPushButton:hover { background: #374151; }"
-                         "QPushButton:pressed, QPushButton:checked { background: #2563eb; }"
-                         "QToolTip { background: #202530; color: white; border: 1px solid #64748b; }"
-                         "QPushButton:disabled { background: #414958; color: #aab0bb; }");
+    layout->setContentsMargins(0, 0, 0, 0);
+    layout->setSpacing(6);
+    panel_->setStyleSheet("QWidget { background: transparent; color: #e5eaf2; }"
+                         "QWidget#captureActions { background: #202938; border: 1px solid #42516a; border-radius: 8px; }"
+                         "QPushButton { background: transparent; border: none; padding: 0; border-radius: 5px; }"
+                         "QPushButton:hover { background: #36465c; }"
+                         "QPushButton:pressed, QPushButton:checked { background: #2563eb; color: white; }"
+                         "QPushButton:disabled { background: transparent; color: #aab0bb; }"
+                         "QFrame#toolbarSeparator { background: #91a0b5; border: none; border-radius: 0; }"
+                         "QComboBox { background: #202938; border: 1px solid #42516a; border-radius: 5px; padding: 5px; }"
+                         "QComboBox QAbstractItemView { background: #202938; selection-background-color: #2563eb; }"
+                         "QToolTip { background: #202530; color: white; border: 1px solid #64748b; }");
+    auto actionBar = new QWidget(panel_);
+    actionBar->setObjectName("captureActions");
+    auto actions = new QHBoxLayout(actionBar);
+    actions->setContentsMargins(8, 8, 8, 8);
+    actions->setSpacing(6);
+    layout->addWidget(actionBar, 0, Qt::AlignHCenter);
+    auto separator = [](QHBoxLayout *row, const QString &name = QString()) {
+        auto line = new QFrame;
+        line->setObjectName("toolbarSeparator");
+        line->setProperty("group", name);
+        line->setFixedSize(1, 24);
+        row->addWidget(line);
+        return line;
+    };
     label_ = new QLabel(QStringLiteral("拖动框选完整截图范围 · Esc 取消"), panel_);
     label_->setWordWrap(true);
     label_->setMinimumWidth(qMin(360, qMax(160, width() - 32)));
     label_->setSizePolicy(QSizePolicy::Ignored, QSizePolicy::Preferred);
-    layout->addWidget(label_);
     windows_ = new QComboBox(panel_);
     windows_->setObjectName("targetWindows");
     windows_->setFocusPolicy(Qt::NoFocus);
     windows_->setSizeAdjustPolicy(QComboBox::AdjustToMinimumContentsLengthWithIcon);
     windows_->setMinimumContentsLength(12);
     layout->addWidget(windows_);
-    auto actions = new QHBoxLayout;
-    actions->setSpacing(2);
-    layout->addLayout(actions);
+    layout->addWidget(label_);
     connect(windows_, QOverload<int>::of(&QComboBox::activated), this, &SelectionOverlay::choose);
     auto button = [&](const QString &text) {
-        auto result = new QPushButton(text, panel_);
+        auto result = new QPushButton(text, actionBar);
         result->setFocusPolicy(Qt::NoFocus);
         actions->addWidget(result);
         return result;
     };
     snapshot_ = button(QStringLiteral("完成 · 复制到剪贴板"));
     snapshot_->setObjectName("captureStill");
-    annotationBar_ = new QWidget(panel_);
+    annotationBar_ = new QWidget(actionBar);
     auto annotationLayout = new QHBoxLayout(annotationBar_);
     annotationLayout->setContentsMargins(0, 0, 0, 0);
-    annotationLayout->setSpacing(2);
+    annotationLayout->setSpacing(6);
     actions->insertWidget(0, annotationBar_);
     auto group = new QButtonGroup(this);
     const QStringList names = { QStringLiteral("选区"), QStringLiteral("矩形"), QStringLiteral("箭头"),
@@ -140,6 +156,7 @@ SelectionOverlay::SelectionOverlay(QScreen *screen,
                           : QStringLiteral("拖动框内移动选区，拖动边缘调整范围"));
         group->addButton(tool, tools[i]);
         annotationLayout->addWidget(tool);
+        if (i == 0) separator(annotationLayout);
     }
     connect(group, QOverload<int>::of(&QButtonGroup::buttonClicked), this, [this](int tool) {
         annotationTool_ = tool;
@@ -150,6 +167,7 @@ SelectionOverlay::SelectionOverlay(QScreen *screen,
     auto ocr = new QPushButton(QStringLiteral("识别文字"), annotationBar_);
     annotationLayout->addWidget(ocr);
     connect(ocr, &QPushButton::clicked, this, [this] { Ocr::showDialog(this, selectionImage()); });
+    separator(annotationLayout);
     auto undo = new QPushButton(QStringLiteral("撤销"), annotationBar_);
     undo->setEnabled(false);
     annotationLayout->addWidget(undo);
@@ -160,6 +178,7 @@ SelectionOverlay::SelectionOverlay(QScreen *screen,
     redo->setObjectName("annotationRedo");
     connect(undo, &QPushButton::clicked, this, [this] { if (annotations_) annotations_->undoStack()->undo(); });
     connect(redo, &QPushButton::clicked, this, [this] { if (annotations_) annotations_->undoStack()->redo(); });
+    separator(annotationLayout);
     auto save = new QPushButton(QStringLiteral("保存"), annotationBar_);
     annotationLayout->addWidget(save);
     connect(save, &QPushButton::clicked, this, [this] {
@@ -173,6 +192,7 @@ SelectionOverlay::SelectionOverlay(QScreen *screen,
             label_->setText(QStringLiteral("保存失败：") + file.errorString());
         else label_->setText(QStringLiteral("已保存，可继续标注或点击完成复制"));
     });
+    separator(actions, "scrollSeparator");
     scrollMode_ = button(QStringLiteral("长截图"));
     scrollMode_->setObjectName("enterScroll");
     connect(snapshot_, &QPushButton::clicked, this, [this] {
@@ -194,7 +214,7 @@ SelectionOverlay::SelectionOverlay(QScreen *screen,
         control->setToolTip(tip);
         control->setIcon(ToolbarIcons::icon(icon));
         control->setIconSize(QSize(20, 20));
-        control->setFixedSize(32, 32);
+        control->setFixedSize(40, 36);
         control->setStyleSheet("padding: 0;");
     };
     const ToolbarIcons::Kind annotationIcons[] = { ToolbarIcons::Move, ToolbarIcons::Rectangle,
@@ -213,6 +233,7 @@ SelectionOverlay::SelectionOverlay(QScreen *screen,
     decorate(windowsButton_, QStringLiteral("重新选择滚动目标窗口"), ToolbarIcons::Window);
     decorate(manualButton_, QStringLiteral("重新框选绿色滚动区域"), ToolbarIcons::Region);
     decorate(finish_, QStringLiteral("完成长截图（Q）"), ToolbarIcons::Finish);
+    separator(actions, "cancelSeparator");
     auto cancelButton = button(QStringLiteral("取消"));
     decorate(cancelButton, QStringLiteral("取消截图（Esc）"), ToolbarIcons::Cancel);
     connect(cancelButton, &QPushButton::clicked, this, [this] { cancel_(); });
@@ -262,14 +283,26 @@ void SelectionOverlay::refresh()
     finish_->setVisible(phase_ == Phase::Capturing && !region_.isEmpty());
     for (auto button : panel_->findChildren<QPushButton *>()) {
         button->ensurePolished();
-        button->setMinimumWidth(32);
+        button->setMinimumWidth(40);
         button->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Fixed);
+    }
+    for (auto line : panel_->findChildren<QFrame *>()) {
+        const auto group = line->property("group").toString();
+        if (group == "scrollSeparator") line->setVisible(!scrollMode_->isHidden());
+        else if (group == "cancelSeparator")
+            line->setVisible(!snapshot_->isHidden() || !start_->isHidden() || !finish_->isHidden());
     }
     annotationBar_->layout()->invalidate();
     annotationBar_->layout()->activate();
+    auto actionBar = panel_->findChild<QWidget *>("captureActions");
+    actionBar->layout()->invalidate();
+    actionBar->layout()->activate();
     panel_->layout()->invalidate();
     panel_->layout()->activate();
     panel_->resize(panel_->layout()->sizeHint().expandedTo(panel_->layout()->minimumSize()));
+    panel_->layout()->setGeometry(panel_->rect());
+    actionBar->layout()->setGeometry(actionBar->rect());
+    annotationBar_->layout()->setGeometry(annotationBar_->rect());
     panel_->show();
     positionPanel();
     if (phase_ == Phase::Outer && !confirmed_) panel_->hide();
@@ -292,7 +325,7 @@ void SelectionOverlay::positionPanel()
     else {
         const int maxX = qMax(available.left(), available.right() + 1 - panel_->width());
         const int maxY = qMax(available.top(), available.bottom() + 1 - panel_->height());
-        const int x = qBound(available.left(), outer_.left(), maxX);
+        const int x = qBound(available.left(), outer_.center().x() - panel_->width() / 2, maxX);
         const int y = qBound(available.top(), outer_.top(), maxY);
         const QPoint choices[] = {
             { x, outer_.bottom() + 12 }, { x, outer_.top() - panel_->height() - 12 },

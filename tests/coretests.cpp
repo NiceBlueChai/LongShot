@@ -8,6 +8,8 @@
 #include "capturecomposition.h"
 #include <QComboBox>
 #include <QDialog>
+#include <QLabel>
+#include <QFrame>
 #include <QPlainTextEdit>
 #include <QTimer>
 #include <QApplication>
@@ -515,13 +517,66 @@ private slots:
             QVERIFY(!button->icon().isNull());
             QVERIFY(!button->toolTip().isEmpty());
             QVERIFY(!button->accessibleName().isEmpty());
-            QCOMPARE(button->width(), 32);
+            QCOMPARE(button->width(), 40);
         }
+        QVERIFY(overlay.panel_->width() < 700);
+        auto row = overlay.panel_->findChild<QWidget *>("captureActions");
+        QVERIFY(row);
+        QVERIFY(overlay.label_->y() >= row->geometry().bottom());
+        auto move = overlay.annotationBar_->findChild<QPushButton *>("annotationTool0");
+        auto rectangle = overlay.annotationBar_->findChild<QPushButton *>("annotationTool2");
+        QVERIFY(move->isChecked());
+        rectangle->click();
+        QVERIFY(rectangle->isChecked());
+        QVERIFY(!move->isChecked());
+        QCOMPARE(overlay.annotationTool_, 2);
+        move->click();
+        QVERIFY(row->width() >= row->minimumSizeHint().width());
+        QVERIFY(overlay.annotationBar_->width() >= overlay.annotationBar_->minimumSizeHint().width());
+        const int rowY = overlay.snapshot_->mapTo(overlay.panel_, QPoint()).y();
+        for (auto button : overlay.panel_->findChildren<QPushButton *>()) {
+            if (!button->isVisibleTo(overlay.panel_)) continue;
+            QCOMPARE(button->mapTo(overlay.panel_, QPoint()).y(), rowY);
+            const QRect bounds(button->mapTo(row, QPoint()), button->size());
+            QVERIFY(row->rect().contains(bounds));
+            for (auto sibling : overlay.panel_->findChildren<QPushButton *>()) {
+                if (sibling == button || !sibling->isVisibleTo(overlay.panel_)) continue;
+                QVERIFY(!bounds.intersects(QRect(sibling->mapTo(row, QPoint()), sibling->size())));
+            }
+        }
+        QWidget *scrollSeparator = nullptr, *cancelSeparator = nullptr;
+        for (auto line : overlay.panel_->findChildren<QFrame *>()) {
+            if (line->property("group").toString() == "scrollSeparator") scrollSeparator = line;
+            if (line->property("group").toString() == "cancelSeparator") cancelSeparator = line;
+        }
+        QVERIFY(scrollSeparator && cancelSeparator);
+        QVERIFY(!scrollSeparator->isHidden());
+        QVERIFY(!cancelSeparator->isHidden());
+        overlay.label_->setText(QStringLiteral("选择工具添加标注 · 完成复制 · Esc 取消"));
+        QVERIFY(overlay.panel_->grab().save(QCoreApplication::applicationDirPath() + "/icon-toolbar.png"));
+        overlay.phase(SelectionOverlay::Phase::Windows);
+        overlay.refresh();
+        QVERIFY(scrollSeparator->isHidden());
+        QVERIFY(cancelSeparator->isHidden());
+        overlay.phase(SelectionOverlay::Phase::Region);
+        overlay.region_ = QRect(110, 110, 100, 100);
+        overlay.refresh();
+        QVERIFY(scrollSeparator->isHidden());
+        QVERIFY(!cancelSeparator->isHidden());
+        overlay.label_->setText(QStringLiteral("确认绿色滚动区域，点击开始采集"));
+        QVERIFY(overlay.panel_->grab().save(QCoreApplication::applicationDirPath() + "/scroll-toolbar.png"));
+        overlay.phase(SelectionOverlay::Phase::Capturing);
+        overlay.refresh();
+        QVERIFY(!overlay.finish_->isHidden());
+        QVERIFY(!cancelSeparator->isHidden());
         overlay.completionKey(true);
         QVERIFY(overlay.finish_->text().isEmpty());
         QVERIFY(overlay.finish_->toolTip().contains("Q"));
-        QVERIFY(overlay.panel_->width() < 500);
-        QVERIFY(overlay.panel_->grab().save(QCoreApplication::applicationDirPath() + "/icon-toolbar.png"));
+        QVERIFY(overlay.panel_->grab().save(QCoreApplication::applicationDirPath() + "/capturing-toolbar.png"));
+        overlay.phase(SelectionOverlay::Phase::Outer);
+        overlay.outer_ = QRect(overlay.width() - 80, overlay.height() - 80, 60, 60);
+        overlay.refresh();
+        QVERIFY(overlay.rect().contains(overlay.panel_->geometry()));
         Editor editor;
         const auto bar = editor.findChild<QToolBar *>();
         QCOMPARE(bar->toolButtonStyle(), Qt::ToolButtonIconOnly);
