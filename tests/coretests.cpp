@@ -1,10 +1,14 @@
 #include "editor.h"
+#include "ocr.h"
 #include "stitcher.h"
 #include "capturecontroller.h"
 #include "windowscapture.h"
 #include "selectionoverlay.h"
 #include "capturecomposition.h"
 #include <QComboBox>
+#include <QDialog>
+#include <QPlainTextEdit>
+#include <QTimer>
 #include <QApplication>
 #include <QClipboard>
 #include <QPainter>
@@ -360,6 +364,76 @@ private slots:
         const QRect negative(-200, -200, 800, 600), tiny(-180, -180, 24, 24);
         QCOMPARE(WindowsCapture::refineElementRegions({ tiny }, negative, tiny.center()).last(), tiny);
     }
+    void windowsOcr()
+    {
+        std::atomic_bool canceled(false);
+        QVERIFY(!Ocr::recognize({}, {}, canceled).error.isEmpty());
+        QImage image(960, 180, QImage::Format_RGB32);
+        image.fill(Qt::white);
+        QPainter painter(&image);
+        painter.setPen(Qt::black);
+        painter.setFont(QFont("Microsoft YaHei", 28));
+        painter.drawText(QPoint(30, 65), QStringLiteral("LongShot OCR 12345"));
+        painter.drawText(QPoint(30, 135), QStringLiteral("截图识别文字"));
+        painter.end();
+        const auto result = std::async(std::launch::async, [&] {
+            return Ocr::recognize(image, QStringLiteral("zh-Hans"), canceled);
+        }).get();
+        qInfo().noquote() << result.language << result.text << result.error;
+        QVERIFY2(result.error.isEmpty(), qPrintable(result.error));
+        QVERIFY(result.text.contains("12345"));
+        QVERIFY(result.text.contains(QStringLiteral("截图")));
+        QVERIFY(result.text.contains('\n'));
+        image.fill(Qt::white);
+        const auto blank = std::async(std::launch::async, [&] {
+            return Ocr::recognize(image, QStringLiteral("en-US"), canceled);
+        }).get();
+        QVERIFY2(blank.error.isEmpty(), qPrintable(blank.error));
+        QVERIFY(blank.text.trimmed().isEmpty());
+        const auto oversized = std::async(std::launch::async, [&] {
+            return Ocr::recognize(QImage(1, 100000, QImage::Format_RGB32), {}, canceled);
+        }).get();
+        QVERIFY(!oversized.error.isEmpty());
+        canceled = true;
+        QVERIFY(Ocr::recognize(image, {}, canceled).text.isEmpty());
+    }
+
+    void ocrDialogCopyAndCancel()
+    {
+        QImage image(600, 100, QImage::Format_RGB32);
+        image.fill(Qt::white);
+        QPainter painter(&image);
+        painter.setFont(QFont("Arial", 28));
+        painter.drawText(QPoint(20, 60), "LongShot 12345");
+        painter.end();
+        QTimer poll;
+        QElapsedTimer elapsed;
+        elapsed.start();
+        bool copied = false;
+        connect(&poll, &QTimer::timeout, this, [&] {
+            auto dialog = qobject_cast<QDialog *>(QApplication::activeModalWidget());
+            if (!dialog) return;
+            auto text = dialog->findChild<QPlainTextEdit *>();
+            if (text && text->toPlainText().contains("12345")) {
+                dialog->grab().save(QCoreApplication::applicationDirPath() + "/ocr-dialog.png");
+                text->setPlainText(QStringLiteral("修改后的识别文字"));
+                for (auto button : dialog->findChildren<QPushButton *>()) {
+                    if (button->text() == QStringLiteral("复制文字")) button->click();
+                }
+                copied = QApplication::clipboard()->text() == QStringLiteral("修改后的识别文字");
+                dialog->reject();
+            } else if (elapsed.elapsed() > 15000) dialog->reject();
+        });
+        poll.start(50);
+        Ocr::showDialog(nullptr, image);
+        poll.stop();
+        QVERIFY(copied);
+        const auto before = QApplication::clipboard()->text();
+        QTimer::singleShot(0, this, [] { QApplication::activeModalWidget()->close(); });
+        Ocr::showDialog(nullptr, image);
+        QCOMPARE(QApplication::clipboard()->text(), before);
+    }
+
     void iconToolbars()
     {
         SelectionOverlay overlay(QGuiApplication::primaryScreen(),

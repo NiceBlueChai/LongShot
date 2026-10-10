@@ -6,7 +6,7 @@
 
 namespace ToolbarIcons {
 enum Kind { Select, Crop, Rectangle, Arrow, Text, Mosaic, Undo, Redo, Save, Copy,
-            Capture, Scroll, Play, Window, Finish, Cancel, ZoomOut, ZoomIn, ActualSize, Fit };
+            Ocr, Capture, Scroll, Play, Window, Finish, Cancel, ZoomOut, ZoomIn, ActualSize, Fit };
 inline QIcon icon(Kind kind)
 {
     QIcon result;
@@ -25,6 +25,7 @@ inline QIcon icon(Kind kind)
             line(7,3,7,17); line(7,17,21,17); line(3,7,17,7); line(17,7,17,21); break;
         case Rectangle: p.drawRect(QRectF(4,5,16,14)); break;
         case Arrow: line(4,20,20,4); line(11,4,20,4); line(20,4,20,13); break;
+        case Ocr: p.drawRect(QRectF(2,3,20,18)); line(7,7,17,7); line(12,7,12,17); break;
         case Text: line(5,5,19,5); line(12,5,12,20); line(8,20,16,20); break;
         case Mosaic:
             for (int y=0; y<3; ++y) for (int x=0; x<3; ++x)

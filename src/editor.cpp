@@ -1,5 +1,6 @@
 #include "editor.h"
 #include "toolbaricons.h"
+#include "ocr.h"
 
 #include <QActionGroup>
 #include <QApplication>
@@ -253,6 +254,9 @@ Editor::Editor(QWidget *parent)
         action->setToolTip(action->text() + (action->shortcut().isEmpty() ? QString()
             : QString(" (%1)").arg(action->shortcut().toString(QKeySequence::NativeText))));
     }
+    auto ocr = bar->addAction(ToolbarIcons::icon(ToolbarIcons::Ocr), QStringLiteral("识别文字"));
+    ocr->setToolTip(QStringLiteral("识别文字（离线 OCR）"));
+    connect(ocr, &QAction::triggered, this, [this] { Ocr::showDialog(this, renderedImage()); });
     connect(view_, &EditorView::drawFinished, this, &Editor::draw);
     connect(view_, &EditorView::itemMoved, this, [this](QGraphicsItem *item, QPointF before, QPointF after) {
         undo_.push(new EditCommand(QStringLiteral("移动标注"), [=] { item->setPos(after); },

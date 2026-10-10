@@ -1,6 +1,7 @@
 #include "selectionoverlay.h"
 #include "editor.h"
 #include "toolbaricons.h"
+#include "ocr.h"
 #include <QButtonGroup>
 #include <QFileDialog>
 #include <QSaveFile>
@@ -146,6 +147,9 @@ SelectionOverlay::SelectionOverlay(QScreen *screen,
         updateCursor(samplePoint_);
         update();
     });
+    auto ocr = new QPushButton(QStringLiteral("识别文字"), annotationBar_);
+    annotationLayout->addWidget(ocr);
+    connect(ocr, &QPushButton::clicked, this, [this] { Ocr::showDialog(this, selectionImage()); });
     auto undo = new QPushButton(QStringLiteral("撤销"), annotationBar_);
     undo->setEnabled(false);
     annotationLayout->addWidget(undo);
@@ -199,6 +203,7 @@ SelectionOverlay::SelectionOverlay(QScreen *screen,
         auto control = qobject_cast<QPushButton *>(group->button(tools[i]));
         decorate(control, (i ? control->toolTip() : names[i] + QStringLiteral("：") + control->toolTip()), annotationIcons[i]);
     }
+    decorate(ocr, QStringLiteral("识别文字（离线 OCR）"), ToolbarIcons::Ocr);
     decorate(undo, QStringLiteral("撤销"), ToolbarIcons::Undo);
     decorate(redo, QStringLiteral("重做"), ToolbarIcons::Redo);
     decorate(save, QStringLiteral("保存 PNG"), ToolbarIcons::Save);
