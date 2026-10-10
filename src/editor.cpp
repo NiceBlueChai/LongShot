@@ -1,4 +1,5 @@
 #include "editor.h"
+#include "toolbaricons.h"
 
 #include <QActionGroup>
 #include <QApplication>
@@ -187,6 +188,8 @@ Editor::Editor(QWidget *parent)
     layout->addLayout(tools);
     setCentralWidget(canvas);
     bar->setMovable(false);
+    bar->setToolButtonStyle(Qt::ToolButtonIconOnly);
+    bar->setIconSize(QSize(20, 20));
     bar->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Fixed);
     auto capture = bar->addAction(QStringLiteral("新截图"));
     connect(capture, &QAction::triggered, this, &Editor::newCapture);
@@ -239,6 +242,17 @@ Editor::Editor(QWidget *parent)
         if (copyImage()) close();
         else QMessageBox::warning(this, QStringLiteral("复制失败"), QStringLiteral("无法生成图片，请保存或重试。"));
     });
+    const ToolbarIcons::Kind icons[] = { ToolbarIcons::Capture, ToolbarIcons::Select, ToolbarIcons::Crop,
+        ToolbarIcons::Rectangle, ToolbarIcons::Arrow, ToolbarIcons::Text, ToolbarIcons::Mosaic,
+        ToolbarIcons::Undo, ToolbarIcons::Redo, ToolbarIcons::ZoomOut, ToolbarIcons::ZoomIn,
+        ToolbarIcons::ActualSize, ToolbarIcons::Fit, ToolbarIcons::Save, ToolbarIcons::Copy, ToolbarIcons::Finish };
+    int iconIndex = 0;
+    for (auto action : bar->actions()) {
+        if (action->isSeparator()) continue;
+        action->setIcon(ToolbarIcons::icon(icons[iconIndex++]));
+        action->setToolTip(action->text() + (action->shortcut().isEmpty() ? QString()
+            : QString(" (%1)").arg(action->shortcut().toString(QKeySequence::NativeText))));
+    }
     connect(view_, &EditorView::drawFinished, this, &Editor::draw);
     connect(view_, &EditorView::itemMoved, this, [this](QGraphicsItem *item, QPointF before, QPointF after) {
         undo_.push(new EditCommand(QStringLiteral("移动标注"), [=] { item->setPos(after); },

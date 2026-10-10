@@ -15,6 +15,7 @@
 #include <QScrollBar>
 #include <QTemporaryDir>
 #include <QWheelEvent>
+#include <QToolBar>
 #include <QtTest>
 #include <tlhelp32.h>
 #include <algorithm>
@@ -359,6 +360,35 @@ private slots:
         const QRect negative(-200, -200, 800, 600), tiny(-180, -180, 24, 24);
         QCOMPARE(WindowsCapture::refineElementRegions({ tiny }, negative, tiny.center()).last(), tiny);
     }
+    void iconToolbars()
+    {
+        SelectionOverlay overlay(QGuiApplication::primaryScreen(),
+            [](SelectionOverlay *, CaptureSelection) {}, [] {}, [] {}, [](SelectionOverlay::Phase) {});
+        overlay.outer_ = QRect(100, 100, 300, 200);
+        overlay.confirmed_ = true;
+        overlay.refresh();
+        for (auto button : overlay.panel_->findChildren<QPushButton *>()) {
+            QVERIFY(button->text().isEmpty());
+            QVERIFY(!button->icon().isNull());
+            QVERIFY(!button->toolTip().isEmpty());
+            QVERIFY(!button->accessibleName().isEmpty());
+            QCOMPARE(button->width(), 32);
+        }
+        overlay.completionKey(true);
+        QVERIFY(overlay.finish_->text().isEmpty());
+        QVERIFY(overlay.finish_->toolTip().contains("Q"));
+        QVERIFY(overlay.panel_->width() < 500);
+        QVERIFY(overlay.panel_->grab().save(QCoreApplication::applicationDirPath() + "/icon-toolbar.png"));
+        Editor editor;
+        const auto bar = editor.findChild<QToolBar *>();
+        QCOMPARE(bar->toolButtonStyle(), Qt::ToolButtonIconOnly);
+        for (auto action : bar->actions()) {
+            if (action->isSeparator()) continue;
+            QVERIFY(!action->icon().isNull());
+            QVERIFY(!action->toolTip().isEmpty());
+        }
+    }
+
     void arrowPreviewMatchesExport()
     {
         QImage source(160, 120, QImage::Format_RGB32);

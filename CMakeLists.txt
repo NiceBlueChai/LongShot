@@ -24,7 +24,7 @@ include(CTest)
 if(BUILD_TESTING)
     add_executable(longshot_tests tests/coretests.cpp src/capturecontroller.cpp src/selectionoverlay.cpp)
     target_link_libraries(longshot_tests PRIVATE longshot_core Qt5::Test)
-    add_test(NAME longshot_core COMMAND longshot_tests completionButtonsFollowCapturePhase wheelSelectionResumesOnMovement magnifierDirtyPaintMatchesFull hoverMovementKeepsCurrentBounds hoverProvidersDoNotBlockEachOther hoverNestedRefinement pixelCardCandidates arrowPreviewMatchesExport mosaicExportAndUndo completeSelectionComposition dpiCoordinates frameAndMemoryLimits
+    add_test(NAME longshot_core COMMAND longshot_tests iconToolbars completionButtonsFollowCapturePhase wheelSelectionResumesOnMovement magnifierDirtyPaintMatchesFull hoverMovementKeepsCurrentBounds hoverProvidersDoNotBlockEachOther hoverNestedRefinement pixelCardCandidates arrowPreviewMatchesExport mosaicExportAndUndo completeSelectionComposition dpiCoordinates frameAndMemoryLimits
         overlapAndShortFinal fixedHeaderFooter translucentStickyHeader narrowContentAndStaticSidebar lowContrastOverlap scrollingBlankMargins repeatedRowsWithUniqueNames adaptiveScrollStep
         rejectsUnrelatedAndAmbiguous longImagePreviewPan cropAnnotationUndoAndExport editorCloseRetainsImage translucentEditor
         -o core-results.txt,txt)

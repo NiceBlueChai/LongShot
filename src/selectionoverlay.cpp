@@ -1,5 +1,6 @@
 #include "selectionoverlay.h"
 #include "editor.h"
+#include "toolbaricons.h"
 #include <QButtonGroup>
 #include <QFileDialog>
 #include <QSaveFile>
@@ -108,7 +109,7 @@ SelectionOverlay::SelectionOverlay(QScreen *screen,
     windows_->setMinimumContentsLength(12);
     layout->addWidget(windows_);
     auto actions = new QHBoxLayout;
-    actions->setSpacing(6);
+    actions->setSpacing(2);
     layout->addLayout(actions);
     connect(windows_, QOverload<int>::of(&QComboBox::activated), this, &SelectionOverlay::choose);
     auto button = [&](const QString &text) {
@@ -122,7 +123,7 @@ SelectionOverlay::SelectionOverlay(QScreen *screen,
     annotationBar_ = new QWidget(panel_);
     auto annotationLayout = new QHBoxLayout(annotationBar_);
     annotationLayout->setContentsMargins(0, 0, 0, 0);
-    annotationLayout->setSpacing(6);
+    annotationLayout->setSpacing(2);
     actions->insertWidget(0, annotationBar_);
     auto group = new QButtonGroup(this);
     const QStringList names = { QStringLiteral("选区"), QStringLiteral("矩形"), QStringLiteral("箭头"),
@@ -183,22 +184,32 @@ SelectionOverlay::SelectionOverlay(QScreen *screen,
     manualButton_ = button(QStringLiteral("调整滚动区域（可选）"));
     manualButton_->setObjectName("manualRegion");
     finish_ = button(QStringLiteral("完成"));
-    auto decorate = [&](QPushButton *control, const QString &title, const QString &tip,
-                        QStyle::StandardPixmap icon) {
-        control->setText(title);
+    auto decorate = [&](QPushButton *control, const QString &tip, ToolbarIcons::Kind icon) {
+        control->setAccessibleName(control->text());
+        control->setText({});
         control->setToolTip(tip);
-        control->setAccessibleName(tip);
-        control->setIcon(style()->standardIcon(icon));
-        control->setIconSize(QSize(16, 16));
+        control->setIcon(ToolbarIcons::icon(icon));
+        control->setIconSize(QSize(20, 20));
+        control->setFixedSize(32, 32);
+        control->setStyleSheet("padding: 0;");
     };
-    decorate(snapshot_, QStringLiteral("完成"), QStringLiteral("复制截图并收起"), QStyle::SP_DialogApplyButton);
-    decorate(scrollMode_, QStringLiteral("长截图"), QStringLiteral("选择滚动区域并开始长截图"), QStyle::SP_ArrowDown);
-    decorate(start_, QStringLiteral("开始"), QStringLiteral("开始自动滚动采集"), QStyle::SP_MediaPlay);
-    decorate(windowsButton_, QStringLiteral("窗口"), QStringLiteral("重新选择滚动目标窗口"), QStyle::SP_BrowserReload);
-    decorate(manualButton_, QStringLiteral("范围"), QStringLiteral("重新框选绿色滚动区域（可选）"), QStyle::SP_TitleBarMaxButton);
-    decorate(finish_, QStringLiteral("完成"), QStringLiteral("停止长截图并进入编辑；采集时可按 Q"), QStyle::SP_DialogApplyButton);
+    const ToolbarIcons::Kind annotationIcons[] = { ToolbarIcons::Select, ToolbarIcons::Rectangle,
+        ToolbarIcons::Arrow, ToolbarIcons::Text, ToolbarIcons::Mosaic };
+    for (int i = 0; i < 5; ++i) {
+        auto control = qobject_cast<QPushButton *>(group->button(tools[i]));
+        decorate(control, (i ? control->toolTip() : names[i] + QStringLiteral("：") + control->toolTip()), annotationIcons[i]);
+    }
+    decorate(undo, QStringLiteral("撤销"), ToolbarIcons::Undo);
+    decorate(redo, QStringLiteral("重做"), ToolbarIcons::Redo);
+    decorate(save, QStringLiteral("保存 PNG"), ToolbarIcons::Save);
+    decorate(snapshot_, QStringLiteral("完成：复制截图并收起"), ToolbarIcons::Finish);
+    decorate(scrollMode_, QStringLiteral("长截图：选择滚动区域"), ToolbarIcons::Scroll);
+    decorate(start_, QStringLiteral("开始自动滚动采集"), ToolbarIcons::Play);
+    decorate(windowsButton_, QStringLiteral("重新选择滚动目标窗口"), ToolbarIcons::Window);
+    decorate(manualButton_, QStringLiteral("重新框选绿色滚动区域"), ToolbarIcons::Crop);
+    decorate(finish_, QStringLiteral("完成长截图（Q）"), ToolbarIcons::Finish);
     auto cancelButton = button(QStringLiteral("取消"));
-    decorate(cancelButton, QStringLiteral("取消"), QStringLiteral("放弃本次截图（Esc），不修改剪贴板"), QStyle::SP_DialogCancelButton);
+    decorate(cancelButton, QStringLiteral("取消截图（Esc）"), ToolbarIcons::Cancel);
     connect(cancelButton, &QPushButton::clicked, this, [this] { cancel_(); });
     connect(finish_, &QPushButton::clicked, this, [this] { stop_(); });
     connect(windowsButton_, &QPushButton::clicked, this, &SelectionOverlay::discover);
@@ -246,7 +257,7 @@ void SelectionOverlay::refresh()
     finish_->setVisible(phase_ == Phase::Capturing && !region_.isEmpty());
     for (auto button : panel_->findChildren<QPushButton *>()) {
         button->ensurePolished();
-        button->setMinimumWidth(button->sizeHint().width());
+        button->setMinimumWidth(32);
         button->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Fixed);
     }
     annotationBar_->layout()->invalidate();
@@ -433,7 +444,7 @@ void SelectionOverlay::completionKey(bool available)
     label_->setText(available
         ? QStringLiteral("Q 完成并编辑 · 移出绿色区域暂停 · 点击外框外或完成结束 · Esc 取消")
         : QStringLiteral("Q 注册失败，请点击外框外或完成结束 · 移出绿色区域暂停 · Esc 取消"));
-    finish_->setText(available ? QStringLiteral("完成 · Q") : QStringLiteral("完成"));
+    finish_->setToolTip(available ? QStringLiteral("完成长截图（Q）") : QStringLiteral("完成长截图（Q 不可用）"));
     refresh();
 }
 SelectionOverlay::~SelectionOverlay() { releaseColorKey(); }
