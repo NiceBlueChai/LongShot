@@ -17,7 +17,7 @@
 
 **长截图：** 框选后点击“长截图”，确认绿色滚动区域，再点“开始”。鼠标移出绿色区域暂停，移回继续；按 `Q` 或点击“完成”结束采集。结果支持缩放、拖动查看和标注。
 
-**文字识别（试用）：** 点击工具栏“识别文字”图标，离线识别后可修改、复制。需要系统 OCR 语言组件；免安装版在部分 Windows 系统上可能不可用。
+**文字识别：** 点击“识别文字”图标，默认使用 PP-OCRv5 离线识别中英混合文字，可修改、复制。请保留程序旁的 `ocr` 目录，也可切换 Windows OCR。当前适合横排截图，单边最多 4096 像素。
 
 常用操作：
 
@@ -29,12 +29,13 @@
 
 ## 构建
 
-需要 Windows、MSVC x64、Qt 5.12.9（Widgets / Test）和 CMake 3.16+。
+需要 Windows、MSVC x64、Qt 5.12.9（Widgets / Test）、CMake 3.16+ 和 Python 3.9+（仅下载构建依赖）。
 
 在 Visual Studio x64 开发者命令提示符中执行，将 Qt 路径替换为自己的安装位置：
 
 ```bat
 set "QT_ROOT=D:\Qt\Qt5.12.9\5.12.9\msvc2017_64"
+python tools/fetch_ocr.py
 cmake -S . -B build -G "NMake Makefiles" -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="%QT_ROOT%"
 cmake --build build
 "%QT_ROOT%\bin\windeployqt.exe" --release --no-translations build\LongShot.exe

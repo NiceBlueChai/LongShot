@@ -830,3 +830,14 @@ Copyright (c) 2010, Google Inc. All rights reserved.
 
 Bundled unchanged: vc_redist.x64.exe, version 14.51.36247.0. Microsoft proprietary license; not GPL.
 [Installer notice](licenses/Microsoft-VC-Redistributable-NOTICE.txt)
+
+## Offline OCR
+
+- PP-OCRv5 mobile detection and recognition models: PaddleOCR (Baidu and contributors), Apache-2.0.
+  ONNX conversions distributed by RapidAI/RapidOCR, model repository revision v3.10.0.
+  https://github.com/PaddlePaddle/PaddleOCR and https://github.com/RapidAI/RapidOCR
+- ONNX Runtime 1.20.1 CPU x64: Microsoft and contributors, MIT.
+  https://github.com/microsoft/onnxruntime/releases/tag/v1.20.1
+- `tools/fetch_ocr.py` records the exact download URLs and SHA-256 values. Binary releases include
+  the upstream license texts, ONNX Runtime third-party notices and `ocr/SOURCES.txt`.
+- No PixPin binaries, model weights, dictionaries or decompiled implementation are included.

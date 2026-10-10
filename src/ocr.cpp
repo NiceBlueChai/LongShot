@@ -34,6 +34,7 @@ QString stringValue(const HString &value)
 
 Ocr::Result Ocr::recognize(const QImage &input, const QString &language, const std::atomic_bool &cancel)
 {
+    if (language == QStringLiteral("ppocr")) return recognizeModel(input, cancel);
     Result result;
     if (input.isNull()) { result.error = QStringLiteral("没有可识别的图片，请先框选区域。"); return result; }
     if (cancel) return result;
@@ -139,13 +140,14 @@ Ocr::Result Ocr::recognize(const QImage &input, const QString &language, const s
 void Ocr::showDialog(QWidget *parent, const QImage &image)
 {
     QDialog dialog(parent, Qt::Dialog | Qt::WindowStaysOnTopHint);
-    dialog.setWindowTitle(QStringLiteral("识别文字 · Windows 离线 OCR"));
+    dialog.setWindowTitle(QStringLiteral("识别文字 · 离线 OCR"));
     dialog.resize(600, 420);
     auto layout = new QVBoxLayout(&dialog);
     auto language = new QComboBox(&dialog);
-    language->addItem(QStringLiteral("系统首选语言"), QString());
-    language->addItem(QStringLiteral("简体中文"), QStringLiteral("zh-Hans"));
-    language->addItem(QStringLiteral("English"), QStringLiteral("en-US"));
+    language->addItem(QStringLiteral("中英混合 · PP-OCRv5"), QStringLiteral("ppocr"));
+    language->addItem(QStringLiteral("Windows OCR · 系统首选语言"), QString());
+    language->addItem(QStringLiteral("Windows OCR · 简体中文"), QStringLiteral("zh-Hans"));
+    language->addItem(QStringLiteral("Windows OCR · English"), QStringLiteral("en-US"));
     layout->addWidget(language);
     auto status = new QLabel(QStringLiteral("正在识别…"), &dialog);
     status->setWordWrap(true);
@@ -190,6 +192,10 @@ void Ocr::showDialog(QWidget *parent, const QImage &image)
             }
         });
         QObject::connect(worker, &QThread::finished, worker, &QObject::deleteLater);
+        QObject::connect(qApp, &QCoreApplication::aboutToQuit, worker, [worker, canceled] {
+            *canceled = true;
+            worker->wait(); // Finish the active inference before the shared runtime is destroyed.
+        });
         worker->start();
     };
     QObject::connect(retry, &QPushButton::clicked, &dialog, run);

@@ -106,6 +106,16 @@ def main():
     stamp = datetime.now().strftime('%Y%m%d-%H%M%S')
     release = ROOT / 'dist/releases' / ('LongShot-0.1.0-' + ('full-' if args.include_sources else 'minimal-') + stamp)
     release.mkdir(parents=True, exist_ok=False)
+    ocr = ROOT / 'build/ocr'
+    required_ocr = ('det.onnx', 'rec.onnx', 'onnxruntime.dll', 'onnxruntime_providers_shared.dll',
+                    'PaddleOCR-LICENSE.txt', 'ONNXRuntime-LICENSE.txt',
+                    'ONNXRuntime-ThirdPartyNotices.txt', 'SOURCES.txt')
+    for name in required_ocr:
+        if not (ocr / name).is_file():
+            raise RuntimeError('Missing OCR asset; run python tools/fetch_ocr.py: ' + name)
+    (release / 'ocr').mkdir()
+    for name in required_ocr:
+        shutil.copyfile(ocr / name, release / 'ocr' / name)
     shutil.copyfile(redist, release / 'vc_redist.x64.exe')
     print('Assembling ' + str(release), flush=True)
     licenses = ROOT / 'licenses'

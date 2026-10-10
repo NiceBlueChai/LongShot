@@ -14,8 +14,12 @@ add_compile_definitions(NOMINMAX WIN32_LEAN_AND_MEAN UNICODE _UNICODE)
 if(MSVC)
     add_compile_options(/utf-8 /W4)
 endif()
-add_library(longshot_core src/stitcher.cpp src/ocr.cpp src/editor.cpp src/windowscapture.cpp src/capturecomposition.cpp)
-target_include_directories(longshot_core PUBLIC src)
+add_library(longshot_core src/stitcher.cpp src/ocr.cpp src/modelocr.cpp src/editor.cpp src/windowscapture.cpp src/capturecomposition.cpp)
+set(LONGSHOT_ONNX_INCLUDE_DIR "${CMAKE_SOURCE_DIR}/build/ocr-deps/include" CACHE PATH "ONNX Runtime headers")
+if(NOT EXISTS "${LONGSHOT_ONNX_INCLUDE_DIR}/onnxruntime_cxx_api.h")
+    message(FATAL_ERROR "Run python tools/fetch_ocr.py before configuring")
+endif()
+target_include_directories(longshot_core PUBLIC src PRIVATE "${LONGSHOT_ONNX_INCLUDE_DIR}")
 target_link_libraries(longshot_core PUBLIC Qt5::Widgets user32 gdi32 ole32 oleaut32 oleacc uiautomationcore dwmapi runtimeobject)
 add_executable(LongShot WIN32 src/main.cpp src/capturecontroller.cpp src/selectionoverlay.cpp
     resources/longshot.rc resources/icons.qrc)
@@ -24,7 +28,7 @@ include(CTest)
 if(BUILD_TESTING)
     add_executable(longshot_tests tests/coretests.cpp src/capturecontroller.cpp src/selectionoverlay.cpp)
     target_link_libraries(longshot_tests PRIVATE longshot_core Qt5::Test)
-    add_test(NAME longshot_core COMMAND longshot_tests iconToolbars completionButtonsFollowCapturePhase wheelSelectionResumesOnMovement magnifierDirtyPaintMatchesFull hoverMovementKeepsCurrentBounds hoverProvidersDoNotBlockEachOther hoverNestedRefinement pixelCardCandidates arrowPreviewMatchesExport mosaicExportAndUndo completeSelectionComposition dpiCoordinates frameAndMemoryLimits
+    add_test(NAME longshot_core COMMAND longshot_tests modelOcr ocrDialogCopyAndCancel iconToolbars completionButtonsFollowCapturePhase wheelSelectionResumesOnMovement magnifierDirtyPaintMatchesFull hoverMovementKeepsCurrentBounds hoverProvidersDoNotBlockEachOther hoverNestedRefinement pixelCardCandidates arrowPreviewMatchesExport mosaicExportAndUndo completeSelectionComposition dpiCoordinates frameAndMemoryLimits
         overlapAndShortFinal fixedHeaderFooter translucentStickyHeader narrowContentAndStaticSidebar lowContrastOverlap scrollingBlankMargins repeatedRowsWithUniqueNames adaptiveScrollStep
         rejectsUnrelatedAndAmbiguous longImagePreviewPan cropAnnotationUndoAndExport editorCloseRetainsImage translucentEditor
         -o core-results.txt,txt)

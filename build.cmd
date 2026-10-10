@@ -4,6 +4,8 @@ set "QT_ROOT=D:\Qt\Qt5.12.9\5.12.9\msvc2017_64"
 call "C:\Program Files\Microsoft Visual Studio\18\Insiders\VC\Auxiliary\Build\vcvars64.bat"
 if errorlevel 1 exit /b 1
 set "PATH=%QT_ROOT%\bin;%PATH%"
+python "%~dp0tools\fetch_ocr.py"
+if errorlevel 1 exit /b 1
 cmake -S "%~dp0." -B "%~dp0build" -G "NMake Makefiles" -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="%QT_ROOT%"
 if errorlevel 1 exit /b 1
 cmake --build "%~dp0build"
@@ -12,6 +14,8 @@ ctest --test-dir "%~dp0build" --output-on-failure
 if errorlevel 1 exit /b 1
 if not exist "%~dp0dist" mkdir "%~dp0dist"
 copy /y "%~dp0build\LongShot.exe" "%~dp0dist\LongShot.exe" >nul
+if errorlevel 1 exit /b 1
+xcopy /e /i /y "%~dp0build\ocr" "%~dp0dist\ocr" >nul
 if errorlevel 1 exit /b 1
 copy /y "%~dp0LICENSE" "%~dp0dist\LICENSE" >nul
 if errorlevel 1 exit /b 1

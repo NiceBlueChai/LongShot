@@ -364,6 +364,61 @@ private slots:
         const QRect negative(-200, -200, 800, 600), tiny(-180, -180, 24, 24);
         QCOMPARE(WindowsCapture::refineElementRegions({ tiny }, negative, tiny.center()).last(), tiny);
     }
+    void modelOcrSample()
+    {
+        const auto path = QString::fromLocal8Bit(qgetenv("LONGSHOT_OCR_SAMPLE"));
+        if (path.isEmpty()) QSKIP("Set LONGSHOT_OCR_SAMPLE to compare a local screenshot");
+        const QImage image(path);
+        QVERIFY(!image.isNull());
+        std::atomic_bool canceled(false);
+        for (const auto &language : {QStringLiteral("ppocr"), QStringLiteral("zh-Hans")}) {
+            QElapsedTimer elapsed;
+            elapsed.start();
+            const auto result = std::async(std::launch::async, [&] {
+                return Ocr::recognize(image, language, canceled);
+            }).get();
+            QVERIFY2(result.error.isEmpty(), qPrintable(result.error));
+            qInfo() << language << "ms:" << elapsed.elapsed() << "characters:" << result.text.size();
+            QFile output(QCoreApplication::applicationDirPath() + "/ocr-sample-" + language + ".txt");
+            QVERIFY(output.open(QIODevice::WriteOnly));
+            QVERIFY(output.write(result.text.toUtf8()) >= 0);
+        }
+    }
+
+    void modelOcr()
+    {
+        std::atomic_bool canceled(false);
+        QVERIFY(!Ocr::recognizeModel({}, canceled).error.isEmpty());
+        QImage image(720, 180, QImage::Format_RGB32);
+        image.fill(Qt::white);
+        QPainter painter(&image);
+        painter.setPen(Qt::black);
+        QFont font("Microsoft YaHei");
+        font.setPixelSize(20);
+        painter.setFont(font);
+        painter.drawText(QPoint(20, 40), QStringLiteral("LongShot OCR 12345"));
+        painter.drawText(QPoint(20, 85), QStringLiteral("截图识别文字，中英文混合测试。"));
+        font.setPixelSize(14);
+        painter.setFont(font);
+        painter.drawText(QPoint(20, 125), QStringLiteral("保存截图 Ctrl+S 2026-10-10"));
+        painter.end();
+        QElapsedTimer elapsed;
+        elapsed.start();
+        const auto result = Ocr::recognizeModel(image, canceled);
+        qInfo().noquote() << "model OCR ms:" << elapsed.elapsed() << result.text << result.error;
+        QVERIFY2(result.error.isEmpty(), qPrintable(result.error));
+        QVERIFY(result.text.contains("12345"));
+        QVERIFY(result.text.contains(QStringLiteral("截图识别文字")));
+        QVERIFY(result.text.contains("2026-10-10"));
+        image.fill(Qt::white);
+        const auto blank = Ocr::recognizeModel(image, canceled);
+        QVERIFY2(blank.error.isEmpty(), qPrintable(blank.error));
+        QVERIFY(blank.text.isEmpty());
+        QVERIFY(!Ocr::recognizeModel(QImage(1, 5000, QImage::Format_RGB32), canceled).error.isEmpty());
+        canceled = true;
+        QVERIFY(Ocr::recognizeModel(image, canceled).text.isEmpty());
+    }
+
     void windowsOcr()
     {
         std::atomic_bool canceled(false);
