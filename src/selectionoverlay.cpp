@@ -1,6 +1,7 @@
 #include "selectionoverlay.h"
 #include "editor.h"
 #include "toolbaricons.h"
+#include "toolbartooltips.h"
 #include "ocr.h"
 #include <QButtonGroup>
 #include <QFileDialog>
@@ -84,6 +85,7 @@ SelectionOverlay::SelectionOverlay(QScreen *screen,
     sampler->start(16);
     setAttribute(Qt::WA_TranslucentBackground);
     setAttribute(Qt::WA_ShowWithoutActivating);
+    setAttribute(Qt::WA_AlwaysShowToolTips);
     setMouseTracking(true);
     setCursor(Qt::CrossCursor);
     setGeometry(screen->geometry());
@@ -205,8 +207,6 @@ SelectionOverlay::SelectionOverlay(QScreen *screen,
     start_ = button(QStringLiteral("开始长截图"));
     start_->setObjectName("startCapture");
     windowsButton_ = button(QStringLiteral("重新选择窗口"));
-    manualButton_ = button(QStringLiteral("调整滚动区域（可选）"));
-    manualButton_->setObjectName("manualRegion");
     finish_ = button(QStringLiteral("完成"));
     auto decorate = [&](QPushButton *control, const QString &tip, ToolbarIcons::Kind icon) {
         control->setAccessibleName(control->text());
@@ -231,7 +231,6 @@ SelectionOverlay::SelectionOverlay(QScreen *screen,
     decorate(scrollMode_, QStringLiteral("长截图：选择滚动区域"), ToolbarIcons::Scroll);
     decorate(start_, QStringLiteral("开始自动滚动采集"), ToolbarIcons::Play);
     decorate(windowsButton_, QStringLiteral("重新选择滚动目标窗口"), ToolbarIcons::Window);
-    decorate(manualButton_, QStringLiteral("重新框选绿色滚动区域"), ToolbarIcons::Region);
     decorate(finish_, QStringLiteral("完成长截图（Q）"), ToolbarIcons::Finish);
     separator(actions, "cancelSeparator");
     auto cancelButton = button(QStringLiteral("取消"));
@@ -239,11 +238,6 @@ SelectionOverlay::SelectionOverlay(QScreen *screen,
     connect(cancelButton, &QPushButton::clicked, this, [this] { cancel_(); });
     connect(finish_, &QPushButton::clicked, this, [this] { stop_(); });
     connect(windowsButton_, &QPushButton::clicked, this, &SelectionOverlay::discover);
-    connect(manualButton_, &QPushButton::clicked, this, [this] {
-        ++revision_; region_ = {};
-        label_->setText(QStringLiteral("在目标窗口内拖动框选实际滚动内容"));
-        refresh();
-    });
     connect(start_, &QPushButton::clicked, this, [this] {
         if (targetIndex_ < 0 || region_.isEmpty()) return;
         const auto &target = candidates_[targetIndex_];
@@ -258,6 +252,7 @@ SelectionOverlay::SelectionOverlay(QScreen *screen,
         const QPoint point = physical(QRect(wheel_, QSize(1, 1))).topLeft();
         begin_(this, { physical(outer_), area, point, target.window, target.process });
     });
+    new ToolbarTooltips(panel_);
     refresh();
 }
 
@@ -277,7 +272,6 @@ void SelectionOverlay::refresh()
     scrollMode_->setEnabled(physical(outer_).width() >= 32 && physical(outer_).height() >= 80);
     windows_->setVisible(candidates_.size() > 1 && (phase_ == Phase::Windows || region));
     windowsButton_->setVisible(region && candidates_.size() > 1);
-    manualButton_->setVisible(region);
     start_->setVisible(region);
     start_->setEnabled(region_.width() >= 32 && region_.height() >= 80);
     finish_->setVisible(phase_ == Phase::Capturing && !region_.isEmpty());

@@ -98,7 +98,7 @@ private:
     QVector<WindowsCapture::WindowCandidate> candidates_;
     QWidget *panel_;
     QLabel *label_;
-    QPushButton *snapshot_, *scrollMode_, *start_, *windowsButton_, *manualButton_, *finish_;
+    QPushButton *snapshot_, *scrollMode_, *start_, *windowsButton_, *finish_;
     QComboBox *windows_;
     std::function<void(SelectionOverlay *, CaptureSelection)> begin_;
     std::function<void()> stop_, cancel_;

@@ -23,7 +23,6 @@
         <file>toolbar/actual-size.svg</file>
         <file>toolbar/fit.svg</file>
         <file>toolbar/move.svg</file>
-        <file>toolbar/region.svg</file>
         <file>toolbar/complete-copy.svg</file>
     </qresource>
 </RCC>

@@ -1,6 +1,7 @@
 cmake_minimum_required(VERSION 3.16)
-project(LongShot VERSION 0.1.0 LANGUAGES CXX)
+project(LongShot VERSION 0.2.0 LANGUAGES CXX)
 configure_file(LICENSE LICENSE COPYONLY)
+configure_file(resources/version.h.in generated/version.h @ONLY)
 if(NOT WIN32)
     message(FATAL_ERROR "LongShot requires Windows")
 endif()
@@ -24,6 +25,7 @@ target_link_libraries(longshot_core PUBLIC Qt5::Widgets Qt5::Svg user32 gdi32 ol
 add_executable(LongShot WIN32 src/main.cpp src/capturecontroller.cpp src/selectionoverlay.cpp
     resources/longshot.rc resources/icons.qrc)
 target_link_libraries(LongShot PRIVATE longshot_core)
+target_include_directories(LongShot PRIVATE "${CMAKE_CURRENT_BINARY_DIR}/generated")
 include(CTest)
 if(BUILD_TESTING)
     add_executable(longshot_tests tests/coretests.cpp src/capturecontroller.cpp src/selectionoverlay.cpp resources/icons.qrc)

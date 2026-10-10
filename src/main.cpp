@@ -1,3 +1,4 @@
+#include "version.h"
 #include "capturecontroller.h"
 #include "editor.h"
 #include "windowscapture.h"
@@ -39,6 +40,7 @@ int main(int argc, char *argv[])
     QApplication::setAttribute(Qt::AA_EnableHighDpiScaling);
     QApplication::setAttribute(Qt::AA_UseHighDpiPixmaps);
     QApplication app(argc, argv);
+    app.setApplicationVersion(QStringLiteral(LONGSHOT_VERSION));
     app.setApplicationName("LongShot");
     app.setOrganizationName("LongShot");
     app.setFont(QFont(QStringLiteral("Microsoft YaHei"), 10));
@@ -198,7 +200,7 @@ int main(int argc, char *argv[])
     });
     QObject::connect(menu.addAction(QStringLiteral("关于 LongShot")), &QAction::triggered, &tray, [&] {
         QMessageBox dialog(QMessageBox::Information, QStringLiteral("关于 LongShot"),
-            QStringLiteral("LongShot 0.1.0\nWindows 截图工具\n\n"
+            QStringLiteral("LongShot " LONGSHOT_VERSION "\nWindows 截图工具\n\n"
                            "区域截图、滚动长截图与标注编辑。\n"
                            "基于 Qt %1 · C++ · Win32\n\n"
                            "许可证：GNU GPL v3.0 only（GPL-3.0-only）\n"

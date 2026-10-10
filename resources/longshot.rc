@@ -1,1 +1,28 @@
 1 ICON "longshot.ico"
+
+#include <windows.h>
+#include "version.h"
+1 VERSIONINFO
+FILEVERSION LONGSHOT_VERSION_TUPLE
+PRODUCTVERSION LONGSHOT_VERSION_TUPLE
+FILEFLAGSMASK VS_FFI_FILEFLAGSMASK
+FILEFLAGS 0
+FILEOS VOS_NT_WINDOWS32
+FILETYPE VFT_APP
+BEGIN
+    BLOCK "StringFileInfo"
+    BEGIN
+        BLOCK "040904b0"
+        BEGIN
+            VALUE "FileDescription", "LongShot"
+            VALUE "FileVersion", LONGSHOT_VERSION
+            VALUE "ProductName", "LongShot"
+            VALUE "ProductVersion", LONGSHOT_VERSION
+            VALUE "OriginalFilename", "LongShot.exe"
+        END
+    END
+    BLOCK "VarFileInfo"
+    BEGIN
+        VALUE "Translation", 0x0409, 1200
+    END
+END

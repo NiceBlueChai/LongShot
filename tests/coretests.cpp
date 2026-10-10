@@ -10,6 +10,8 @@
 #include <QDialog>
 #include <QLabel>
 #include <QFrame>
+#include <QHelpEvent>
+#include <QToolTip>
 #include <QPlainTextEdit>
 #include <QTimer>
 #include <QApplication>
@@ -494,6 +496,8 @@ private slots:
 
     void iconToolbars()
     {
+        QApplication::setEffectEnabled(Qt::UI_AnimateTooltip, false);
+        QApplication::setEffectEnabled(Qt::UI_FadeTooltip, false);
         for (int kind = 0; kind < ToolbarIcons::Count; ++kind) {
             const auto icon = ToolbarIcons::icon(static_cast<ToolbarIcons::Kind>(kind));
             QVERIFY2(!icon.isNull(), qPrintable(QString("Missing SVG icon %1").arg(kind)));
@@ -519,6 +523,7 @@ private slots:
             QVERIFY(!button->accessibleName().isEmpty());
             QCOMPARE(button->width(), 40);
         }
+        QVERIFY(overlay.testAttribute(Qt::WA_AlwaysShowToolTips));
         QVERIFY(overlay.panel_->width() < 700);
         auto row = overlay.panel_->findChild<QWidget *>("captureActions");
         QVERIFY(row);
@@ -549,6 +554,17 @@ private slots:
             if (line->property("group").toString() == "scrollSeparator") scrollSeparator = line;
             if (line->property("group").toString() == "cancelSeparator") cancelSeparator = line;
         }
+        auto showTip = [](QWidget *button) {
+            const QPoint point = button->rect().center();
+            QHelpEvent help(QEvent::ToolTip, point, button->mapToGlobal(point));
+            QApplication::sendEvent(button, &help);
+            QVERIFY(QToolTip::isVisible());
+            QCOMPARE(QToolTip::text(), button->toolTip());
+            QToolTip::hideText();
+        };
+        for (auto button : overlay.panel_->findChildren<QPushButton *>()) {
+            if (button->isVisibleTo(overlay.panel_)) showTip(button);
+        }
         QVERIFY(scrollSeparator && cancelSeparator);
         QVERIFY(!scrollSeparator->isHidden());
         QVERIFY(!cancelSeparator->isHidden());
@@ -563,6 +579,19 @@ private slots:
         overlay.refresh();
         QVERIFY(scrollSeparator->isHidden());
         QVERIFY(!cancelSeparator->isHidden());
+        overlay.candidates_.resize(2);
+        overlay.refresh();
+        for (auto button : overlay.panel_->findChildren<QPushButton *>()) {
+            if (button->isVisibleTo(overlay.panel_)) showTip(button);
+        }
+        QToolTip::hideText();
+        QEvent enter(QEvent::Enter);
+        QApplication::sendEvent(overlay.start_, &enter);
+        QVERIFY(QToolTip::isVisible());
+        QCOMPARE(QToolTip::text(), overlay.start_->toolTip());
+        QEvent leave(QEvent::Leave);
+        QApplication::sendEvent(overlay.start_, &leave);
+        QTRY_VERIFY_WITH_TIMEOUT(!QToolTip::isVisible(), 1000);
         overlay.label_->setText(QStringLiteral("确认绿色滚动区域，点击开始采集"));
         QVERIFY(overlay.panel_->grab().save(QCoreApplication::applicationDirPath() + "/scroll-toolbar.png"));
         overlay.phase(SelectionOverlay::Phase::Capturing);
@@ -572,18 +601,29 @@ private slots:
         overlay.completionKey(true);
         QVERIFY(overlay.finish_->text().isEmpty());
         QVERIFY(overlay.finish_->toolTip().contains("Q"));
+        showTip(overlay.finish_);
+        overlay.completionKey(false);
+        QVERIFY(overlay.finish_->toolTip().contains(QStringLiteral("不可用")));
+        showTip(overlay.finish_);
         QVERIFY(overlay.panel_->grab().save(QCoreApplication::applicationDirPath() + "/capturing-toolbar.png"));
         overlay.phase(SelectionOverlay::Phase::Outer);
         overlay.outer_ = QRect(overlay.width() - 80, overlay.height() - 80, 60, 60);
         overlay.refresh();
         QVERIFY(overlay.rect().contains(overlay.panel_->geometry()));
         Editor editor;
+        QVERIFY(editor.testAttribute(Qt::WA_AlwaysShowToolTips));
         const auto bar = editor.findChild<QToolBar *>();
         QCOMPARE(bar->toolButtonStyle(), Qt::ToolButtonIconOnly);
         for (auto action : bar->actions()) {
             if (action->isSeparator()) continue;
             QVERIFY(!action->icon().isNull());
             QVERIFY(!action->toolTip().isEmpty());
+            QVERIFY(action->toolTip() != QStringLiteral("+"));
+            QVERIFY(action->toolTip() != QStringLiteral("−"));
+            auto button = bar->widgetForAction(action);
+            QVERIFY(button);
+            QCOMPARE(button->toolTip(), action->toolTip());
+            showTip(button);
         }
     }
 
@@ -1038,7 +1078,8 @@ private slots:
         QVERIFY(QMetaObject::invokeMethod(choices, "activated", Q_ARG(int, index)));
         QCOMPARE(controller.state(), CaptureController::State::ChoosingRegion);
         const QRect scroll = twoWindows ? left : right;
-        overlay->findChild<QPushButton *>("manualRegion")->click();
+        ++overlay->revision_;
+        overlay->region_ = {};
         drag(overlay, local(scroll));
         const auto button = overlay->findChild<QPushButton *>("startCapture");
         QVERIFY(button && button->isEnabled());
@@ -1124,7 +1165,8 @@ private slots:
         auto choices = overlay->findChild<QComboBox *>("targetWindows");
         QVERIFY(choices);
         QVERIFY(QMetaObject::invokeMethod(choices, "activated", Q_ARG(int, index)));
-        overlay->findChild<QPushButton *>("manualRegion")->click();
+        ++overlay->revision_;
+        overlay->region_ = {};
         drag(areas[0]);
         const auto start = overlay->findChild<QPushButton *>("startCapture");
         QVERIFY(start && start->isEnabled());

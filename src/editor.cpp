@@ -1,5 +1,6 @@
 #include "editor.h"
 #include "toolbaricons.h"
+#include "toolbartooltips.h"
 #include "ocr.h"
 
 #include <QActionGroup>
@@ -166,6 +167,7 @@ Editor::Editor(QWidget *parent)
     setWindowTitle(QStringLiteral("LongShot · 截图"));
     setWindowFlags(Qt::FramelessWindowHint | Qt::WindowStaysOnTopHint);
     setAttribute(Qt::WA_TranslucentBackground);
+    setAttribute(Qt::WA_AlwaysShowToolTips);
     setGeometry(QGuiApplication::primaryScreen()->availableGeometry());
     setStyleSheet("QMainWindow { background: transparent; }"
                   "QToolBar { background: #202938; spacing: 6px; padding: 8px; border: 1px solid #42516a; border-radius: 8px; }"
@@ -213,13 +215,13 @@ Editor::Editor(QWidget *parent)
     redo->setShortcut(QKeySequence::Redo);
     bar->addAction(redo);
     bar->addSeparator();
-    connect(bar->addAction(QStringLiteral("−")), &QAction::triggered, this,
+    connect(bar->addAction(QStringLiteral("缩小")), &QAction::triggered, this,
             [this] { view_->setZoom(view_->zoom() / 1.2); });
-    connect(bar->addAction(QStringLiteral("+")), &QAction::triggered, this,
+    connect(bar->addAction(QStringLiteral("放大")), &QAction::triggered, this,
             [this] { view_->setZoom(view_->zoom() * 1.2); });
-    connect(bar->addAction(QStringLiteral("100%")), &QAction::triggered, this,
+    connect(bar->addAction(QStringLiteral("原始大小（100%）")), &QAction::triggered, this,
             [this] { view_->setZoom(1); });
-    connect(bar->addAction(QStringLiteral("适应")), &QAction::triggered, this, [this] {
+    connect(bar->addAction(QStringLiteral("适应窗口")), &QAction::triggered, this, [this] {
         view_->fitInView(scene_->sceneRect(), Qt::KeepAspectRatio);
         view_->setZoom(view_->zoom());
     });
@@ -257,6 +259,7 @@ Editor::Editor(QWidget *parent)
     auto ocr = bar->addAction(ToolbarIcons::icon(ToolbarIcons::Ocr), QStringLiteral("识别文字"));
     ocr->setToolTip(QStringLiteral("识别文字（离线 OCR）"));
     connect(ocr, &QAction::triggered, this, [this] { Ocr::showDialog(this, renderedImage()); });
+    new ToolbarTooltips(bar);
     connect(view_, &EditorView::drawFinished, this, &Editor::draw);
     connect(view_, &EditorView::itemMoved, this, [this](QGraphicsItem *item, QPointF before, QPointF after) {
         undo_.push(new EditCommand(QStringLiteral("移动标注"), [=] { item->setPos(after); },
