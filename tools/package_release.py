@@ -182,7 +182,7 @@ def main():
     write(ROOT / 'THIRD_PARTY_NOTICES.md', '\n'.join(notice) + '\n')
     write(licenses / 'qt-attributions.json', json.dumps(rows, ensure_ascii=False, indent=2) + '\n')
     if not args.include_sources:
-        minimal = {'Qt5Core.dll', 'Qt5Gui.dll', 'Qt5Widgets.dll', 'platforms/qwindows.dll',
+        minimal = {'Qt5Core.dll', 'Qt5Gui.dll', 'Qt5Widgets.dll', 'Qt5Svg.dll', 'platforms/qwindows.dll',
                    'styles/qwindowsvistastyle.dll', 'imageformats/qico.dll', 'imageformats/qjpeg.dll'}
         for name in ('LICENSE', 'THIRD_PARTY_NOTICES.md'):
             shutil.copyfile(ROOT / name, release / name)

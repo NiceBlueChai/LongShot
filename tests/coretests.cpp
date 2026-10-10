@@ -1,4 +1,5 @@
 #include "editor.h"
+#include "toolbaricons.h"
 #include "ocr.h"
 #include "stitcher.h"
 #include "capturecontroller.h"
@@ -491,6 +492,19 @@ private slots:
 
     void iconToolbars()
     {
+        for (int kind = 0; kind < ToolbarIcons::Count; ++kind) {
+            const auto icon = ToolbarIcons::icon(static_cast<ToolbarIcons::Kind>(kind));
+            QVERIFY2(!icon.isNull(), qPrintable(QString("Missing SVG icon %1").arg(kind)));
+            for (int size : { 20, 40, 60 }) {
+                const auto image = icon.pixmap(size, size).toImage().convertToFormat(QImage::Format_ARGB32);
+                QVERIFY(!image.isNull());
+                bool visible = false;
+                for (int y = 0; y < image.height(); ++y)
+                    for (int x = 0; x < image.width(); ++x)
+                        visible |= qAlpha(image.pixel(x, y)) != 0;
+                QVERIFY2(visible, qPrintable(QString("Blank SVG icon %1 at %2px").arg(kind).arg(size)));
+            }
+        }
         SelectionOverlay overlay(QGuiApplication::primaryScreen(),
             [](SelectionOverlay *, CaptureSelection) {}, [] {}, [] {}, [](SelectionOverlay::Phase) {});
         overlay.outer_ = QRect(100, 100, 300, 200);

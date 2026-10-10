@@ -246,7 +246,7 @@ Editor::Editor(QWidget *parent)
     const ToolbarIcons::Kind icons[] = { ToolbarIcons::Capture, ToolbarIcons::Select, ToolbarIcons::Crop,
         ToolbarIcons::Rectangle, ToolbarIcons::Arrow, ToolbarIcons::Text, ToolbarIcons::Mosaic,
         ToolbarIcons::Undo, ToolbarIcons::Redo, ToolbarIcons::ZoomOut, ToolbarIcons::ZoomIn,
-        ToolbarIcons::ActualSize, ToolbarIcons::Fit, ToolbarIcons::Save, ToolbarIcons::Copy, ToolbarIcons::Finish };
+        ToolbarIcons::ActualSize, ToolbarIcons::Fit, ToolbarIcons::Save, ToolbarIcons::Copy, ToolbarIcons::CompleteCopy };
     int iconIndex = 0;
     for (auto action : bar->actions()) {
         if (action->isSeparator()) continue;

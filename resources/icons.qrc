@@ -1,5 +1,29 @@
 <RCC>
     <qresource prefix="/icons">
         <file>longshot.ico</file>
+        <file>toolbar/select.svg</file>
+        <file>toolbar/crop.svg</file>
+        <file>toolbar/rectangle.svg</file>
+        <file>toolbar/arrow.svg</file>
+        <file>toolbar/text.svg</file>
+        <file>toolbar/mosaic.svg</file>
+        <file>toolbar/undo.svg</file>
+        <file>toolbar/redo.svg</file>
+        <file>toolbar/save.svg</file>
+        <file>toolbar/copy.svg</file>
+        <file>toolbar/ocr.svg</file>
+        <file>toolbar/capture.svg</file>
+        <file>toolbar/scroll.svg</file>
+        <file>toolbar/play.svg</file>
+        <file>toolbar/window.svg</file>
+        <file>toolbar/finish.svg</file>
+        <file>toolbar/cancel.svg</file>
+        <file>toolbar/zoom-out.svg</file>
+        <file>toolbar/zoom-in.svg</file>
+        <file>toolbar/actual-size.svg</file>
+        <file>toolbar/fit.svg</file>
+        <file>toolbar/move.svg</file>
+        <file>toolbar/region.svg</file>
+        <file>toolbar/complete-copy.svg</file>
     </qresource>
 </RCC>

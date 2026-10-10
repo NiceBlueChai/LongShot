@@ -197,7 +197,7 @@ SelectionOverlay::SelectionOverlay(QScreen *screen,
         control->setFixedSize(32, 32);
         control->setStyleSheet("padding: 0;");
     };
-    const ToolbarIcons::Kind annotationIcons[] = { ToolbarIcons::Select, ToolbarIcons::Rectangle,
+    const ToolbarIcons::Kind annotationIcons[] = { ToolbarIcons::Move, ToolbarIcons::Rectangle,
         ToolbarIcons::Arrow, ToolbarIcons::Text, ToolbarIcons::Mosaic };
     for (int i = 0; i < 5; ++i) {
         auto control = qobject_cast<QPushButton *>(group->button(tools[i]));
@@ -207,11 +207,11 @@ SelectionOverlay::SelectionOverlay(QScreen *screen,
     decorate(undo, QStringLiteral("撤销"), ToolbarIcons::Undo);
     decorate(redo, QStringLiteral("重做"), ToolbarIcons::Redo);
     decorate(save, QStringLiteral("保存 PNG"), ToolbarIcons::Save);
-    decorate(snapshot_, QStringLiteral("完成：复制截图并收起"), ToolbarIcons::Finish);
+    decorate(snapshot_, QStringLiteral("完成：复制截图并收起"), ToolbarIcons::CompleteCopy);
     decorate(scrollMode_, QStringLiteral("长截图：选择滚动区域"), ToolbarIcons::Scroll);
     decorate(start_, QStringLiteral("开始自动滚动采集"), ToolbarIcons::Play);
     decorate(windowsButton_, QStringLiteral("重新选择滚动目标窗口"), ToolbarIcons::Window);
-    decorate(manualButton_, QStringLiteral("重新框选绿色滚动区域"), ToolbarIcons::Crop);
+    decorate(manualButton_, QStringLiteral("重新框选绿色滚动区域"), ToolbarIcons::Region);
     decorate(finish_, QStringLiteral("完成长截图（Q）"), ToolbarIcons::Finish);
     auto cancelButton = button(QStringLiteral("取消"));
     decorate(cancelButton, QStringLiteral("取消截图（Esc）"), ToolbarIcons::Cancel);
